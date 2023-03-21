@@ -32,16 +32,13 @@ The solution is created with [AWS CDK](https://aws.amazon.com/cdk/). Make sure y
 and that you have [AWS CLI access](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) to the AWS account you want to deploy the solution in. You also need the [Docker CLI](https://docs.docker.com/get-docker/) installed because [container images](https://docs.aws.amazon.com/lambda/latest/dg/images-create.html) are used for the deployment of the AWS Lambda functions.
 The `cdk.json` file contains general but also solution-specific configuration variables. You may change the Amazon Braket regions and the primary region for the solution deployment there.
 
-The project is set up like a standard Python project.  The initialization process also creates a virtualenv within this project, stored under the `.venv` directory.  To create the virtualenv it assumes that there is a `python3` (or `python` for Windows) executable in your path with access to the `venv` package. If for any reason the automatic creation of the virtualenv fails, you can create the virtualenv manually.
-
-To manually create a virtualenv on MacOS and Linux:
+To create a virtual environment for the Python project, make sure that there is a `python3` executable in your path with access to the [`venv`](https://docs.python.org/3/library/venv.html) package and execute
 
 ```shell
 $ python3 -m venv .venv
 ```
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+After the init process completes and the virtualenv is created, you can use the following step to activate your virtualenv.
 
 ```shell
 $ source .venv/bin/activate
@@ -56,33 +53,34 @@ If you are a Windows platform, you would activate the virtualenv like this:
 Once the virtualenv is activated, you can install the required dependencies.
 
 ```shell
-$ pip install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
+
+Next edit the file `cdk.json` and update the following context parameters:
+
+* `awsAccountId`: Your 12-digit AWS account ID.
+* `notificationEmailAddress`: Your email address alarm notifications will be sent to.
+* `allTimeCostLimit`: Your quantum task budget limit since initial deployment in USD.
+* `monthlyCostLimit`: Your quantum task budget limit per month in USD.
 
 At this point you can now synthesize the CDK app with
 ```shell
-$ cdk synth -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<YOUR_EMAIL_ADDRESS> --all
+$ cdk synth --all
 ```
 
-> **Note:** You may want to add the parameters `awsAccountId` and `notificationEmailAddress` to the `context` property in the file [cdk.json](./cdk.json).
-> Then you don't need to pass these as context parameters (`-c`) to every `cdk` command.
-
-Make sure you initially [bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html) your AWS environment for the deployment of CDK apps (this has to be done only once per Amazon Braket region):
+Now [bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html) your AWS environment for the deployment of CDK app (this has to be done only once per Amazon Braket region):
 ```shell
-$ for region in "us-east-1" "us-west-1" "us-west-2" "eu-west-2"
-$ do
-$ cdk bootstrap aws://<YOUR_AWS_ACCOUNT_ID>/${region} -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<YOUR_EMAIL_ADDRESS>
-$ done
+$ python3 bootstrap.py
 ```
 
 To deploy the solution run
 ```shell
-$ cdk deploy -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<YOUR_EMAIL_ADDRESS> --all
+$ cdk deploy --all
 ```
 
 To test the solution you can execute
 ```shell
-$ python create_quantum_tasks.py 
+$ python3 create_quantum_tasks.py 
 ```
 > **Note:** Be aware that there are costs associated with the Amazon Braket quantum tasks created by the `create_quantum_tasks.py` script.
 
@@ -97,12 +95,12 @@ $ source .venv/bin/activate
 ```
 and the required dependencies for the CDK app are installed
 ```shell
-$ pip install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
 
 To deploy the updated solution run
 ```shell
-$ cdk deploy -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<YOUR_EMAIL_ADDRESS> --all
+$ cdk deploy --all
 ```
 
 
@@ -110,7 +108,7 @@ $ cdk deploy -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<
 
 You can uninstall the Amazon Braket Cost Control solution with
 ```shell
-$ cdk destroy -c awsAccountId=<YOUR_AWS_ACCOUNT_ID> -c notificationEmailAddress=<YOUR_EMAIL_ADDRESS> --all
+$ cdk destroy --all
 ```
 
 By default, the following resources are retained in your account:

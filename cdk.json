@@ -34,6 +34,8 @@
     "@aws-cdk/core:enablePartitionLiterals": true,
     "@aws-cdk/core:target-partitions": ["aws"],
     "solutionIdentifier": "BraketCostControlSolution",
+    "awsAccountId": "",
+    "notificationEmailAddress": "",
     "primaryRegion": "us-east-1",
     "braketRegions": [
       "us-east-1",
