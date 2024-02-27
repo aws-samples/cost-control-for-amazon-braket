@@ -3,22 +3,26 @@
 
 from braket.circuits import Circuit
 from braket.aws import AwsDevice
+from braket.devices import Devices
 
 bell = Circuit().h(0).cnot(control=0, target=1)
 shots = 100
 
-sv1_device = AwsDevice('arn:aws:braket:::device/quantum-simulator/amazon/sv1')
-sv1_task = sv1_device.run(bell, shots=shots)
-print('SV1 task', sv1_task.state(), sv1_task.id)
+device_arns = [
+    Devices.Amazon.SV1,
+    Devices.IonQ.Harmony,
+    Devices.Rigetti.AspenM3,
+    Devices.OQC.Lucy,
+]
 
-ionq_device = AwsDevice('arn:aws:braket:::device/qpu/ionq/ionQdevice')
-ionq_task = ionq_device.run(bell, shots=shots)
-print('IonQ task', ionq_task.state(), ionq_task.id)
-
-rigetti_device = AwsDevice('arn:aws:braket:us-west-1::device/qpu/rigetti/Aspen-M-3')
-rigetti_task = rigetti_device.run(bell, shots=shots)
-print('Rigetti task', rigetti_task.state(), rigetti_task.id)
-
-oqc_device = AwsDevice('arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy')
-oqc_task = oqc_device.run(bell, shots=shots)
-print('OQC task', oqc_task.state(), oqc_task.id)
+for device_arn in device_arns:
+    device = AwsDevice(arn=device_arn)
+    try:
+        task = device.run(bell, shots=shots)
+        print('{device_name} task {task_state} {task_arn}'.format(
+            device_name=device.name,
+            task_state=task.state(),
+            task_arn=task.id)
+        )
+    except Exception as e:
+        print('{device_name}: {error}'.format(device_name=device.name, error=e))
