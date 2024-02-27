@@ -33,7 +33,7 @@ def handler(event: TaskLoggerModel, context: LambdaContext) -> None:
 
         if event.get_status() == 'INITIALIZED':
             record_task_user_identity(event_time=event.time, task_data=event.detail)
-        elif event.get_status() == 'RUNNING' and event.is_qpu_task():
+        elif (event.get_status() == 'RUNNING' or event.get_status() == 'COMPLETED') and event.is_qpu_task():
             task_cost = calculate_qpu_task_cost(task_data=event.detail)
             record_task_cost(event_time=event.time, task_cost=task_cost, task_data=event.detail)
         elif event.get_status() == 'COMPLETED' and event.is_simulator_task():
