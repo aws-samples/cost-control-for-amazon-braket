@@ -1,5 +1,5 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-amazon-braket-sdk
-aws-lambda-powertools
+amazon-braket-sdk==1.73.2
+aws-lambda-powertools==2.35.1
