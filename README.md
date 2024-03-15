@@ -32,6 +32,8 @@ The solution is created with [AWS CDK](https://aws.amazon.com/cdk/). Make sure y
 and that you have [AWS CLI access](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) to the AWS account you want to deploy the solution in. You also need the [Docker CLI](https://docs.docker.com/get-docker/) installed because [container images](https://docs.aws.amazon.com/lambda/latest/dg/images-create.html) are used for the deployment of the AWS Lambda functions.
 The `cdk.json` file contains general but also solution-specific configuration variables. You may change the Amazon Braket regions and the primary region for the solution deployment there.
 
+The solution requires an [AWS CloudTrail trail](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-getting-started.html) set up in your AWS account. If you don't have one created already, please do so prior to the initial deployment.
+
 To create a virtual environment for the Python project, make sure that there is a `python3` executable in your path with access to the [`venv`](https://docs.python.org/3/library/venv.html) package and execute
 
 ```shell
