@@ -13,6 +13,7 @@ with open("_version.py") as f:
 
 app = cdk.App()
 
+tag_key = 'solution'
 solution_id = '{}/{}'.format(app.node.try_get_context('solutionIdentifier'), version)
 aws_account_id = app.node.try_get_context('awsAccountId')
 primary_region = app.node.try_get_context('primaryRegion')
@@ -55,8 +56,9 @@ AmazonBraketCostControlStack(
     role_names_to_control=iam_role_names_to_control,
     group_names_to_control=iam_group_names_to_control,
     user_names_to_control=iam_user_names_to_control,
-    solution_id=solution_id
+    solution_id=solution_id,
+    tag_key=tag_key
 )
 cdk.Aspects.of(app).add(AwsSolutionsChecks())
-
+cdk.Tags.of(app).add(tag_key, solution_id)
 app.synth()

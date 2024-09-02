@@ -24,6 +24,7 @@ from cdk_nag import NagSuppressions
 class AmazonBraketCostControlStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        tag_key = kwargs.pop('tag_key')
         solution_id = kwargs.pop('solution_id')
         event_bus_name = kwargs.pop('event_bus_name')
         task_item_ttl_days = kwargs.pop('task_item_ttl_days')
@@ -172,6 +173,7 @@ class AmazonBraketCostControlStack(Stack):
             log_retention=aws_logs.RetentionDays.ONE_MONTH,
             log_retention_role=log_retention_role,
             environment={
+                'TAG_KEY': tag_key,
                 'SOLUTION_ID': solution_id,
                 'TASKS_TABLE_NAME': tasks_table.table_name,
                 'TASK_ITEM_TTL_DAYS': task_item_ttl_days,
@@ -391,12 +393,60 @@ class AmazonBraketCostControlStack(Stack):
             resources=[notification_topic.topic_arn]
         ))
 
+        cost_explorer_lambda_role = aws_iam.Role(
+            self,
+            'cost-explorer-lambda-role',
+            role_name='braket-cost-explorer-report',
+            assumed_by=aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+            path='/service-role/',
+            managed_policies=[aws_managed_lambda_execution_role],
+            inline_policies={'cost-control-policy': aws_iam.PolicyDocument(statements=[
+                aws_iam.PolicyStatement(
+                    effect=aws_iam.Effect.ALLOW,
+                    actions=[
+                        'ce:GetCost*',
+                    ],
+                    resources=['*']
+                ),
+            ])}
+        )
+        NagSuppressions.add_resource_suppressions(
+            construct=cost_explorer_lambda_role,
+            suppressions=[
+                {'id': 'AwsSolutions-IAM4', 'reason': 'Intentional use of AWSLambdaBasicExecutionRole'},
+                {'id': 'AwsSolutions-IAM5', 'reason': 'Used wildcards required for functionality'},
+            ]
+        )
+        cost_explorer_lambda = aws_lambda.DockerImageFunction(
+            self,
+            'cost-explorer-lambda',
+            function_name='braket-cost-explorer-report',
+            role=cost_explorer_lambda_role,
+            code=aws_lambda.DockerImageCode.from_image_asset(
+                directory=pathlib.Path(__file__)
+                .parent
+                .parent
+                .joinpath('lambda')
+                .joinpath('cost_explorer_report')
+                .resolve()
+                .as_posix()
+            ),
+            architecture=aws_lambda.Architecture.ARM_64,
+            log_retention=aws_logs.RetentionDays.ONE_MONTH,
+            log_retention_role=log_retention_role,
+            environment={
+                'TAG_KEY': tag_key,
+                'SOLUTION_ID': solution_id
+            },
+            timeout=Duration.seconds(60)
+        )
+
         aws_logs.QueryDefinition(
             self,
             'braket-cost-control-logs-query',
             query_definition_name='braket-cost-control-logs-query',
             query_string=aws_logs.QueryString(
-                fields=['@timestamp', 'function_name', 'level', 'message', 'device', '@message'],
+                fields=['@timestamp', 'function_name', 'level', 'message', '@message'],
                 sort='@timestamp asc',
                 filter='@message not like /(START|END|REPORT)./',
             ),
@@ -551,27 +601,58 @@ class AmazonBraketCostControlStack(Stack):
 
         )
         dashboard.add_widgets(
+            aws_cloudwatch.TextWidget(
+                markdown=f"""
+# Amazon Braket Cost Dashboard
+This Amazon CloudWatch dashboard is created as part of the open-source cost control solution for Amazon Braket and provides a single view for your 
+estimated resource costs related to your usage of Amazon Braket in this AWS account. Keep in mind that cost data displayed here are estimates and that
+the AWS Billing Console provides access to a suite of features helping you set up your billing, retrieve and pay invoices, and analyze, organize, 
+plan, and optimize your costs.
+
+[button:Blog Post](https://aws.amazon.com/blogs/quantum-computing/introducing-a-cost-control-solution-for-amazon-braket/) 
+[button:GitHub Repository](https://github.com/aws-samples/cost-control-for-amazon-braket)
+[button:primary:AWS AWS Billing Console](https://us-east-1.console.aws.amazon.com/costmanagement)
+
+``
+
+## AWS Cost Explorer Data
+Widgets in this section display data retrieved from the AWS Cost Explorer API. You need to enable AWS Cost Explorer in your account before you can 
+use it. See the [AWS Cost Explorer documentation](https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html) to learn about the
+process of enabling Cost Explorer and about the refresh rate of your cost data.
+                """,
+                width=24,
+                height=6,
+            )
+        )
+        dashboard.add_widgets(
+            aws_cloudwatch.CustomWidget(
+                title='AWS Cost Explorer Data Month-to-Date',
+                function_arn=cost_explorer_lambda.function_arn,
+                width=24,
+                height=11
+            )
+        )
+        dashboard.add_widgets(
+            aws_cloudwatch.TextWidget(
+                markdown="""
+## Near Real-Time Quantum Task Cost Estimation
+Near real-time cost estimates of on-demand simulator and quantum processing unit tasks - created either individually or in the context of an Amazon Braket Hybrid Job 
+execution - recorded by the open-source cost control solution for Amazon Braket.
+                """,
+                width=24,
+                height=2,
+            )
+        )
+        dashboard.add_widgets(
             aws_cloudwatch.AlarmStatusWidget(
                 title='Budget Alarm Status',
                 alarms=[
                     task_cost_alarm_all_time,
                     task_cost_alarm_monthly,
                 ],
-                width=6,
-                height=3,
+                width=24,
+                height=2,
             ),
-            aws_cloudwatch.AlarmStatusWidget(
-                title='Operational Alarm Status',
-                alarms=[
-                    task_logger_lambda_alarm,
-                    cost_meter_lambda_alarm,
-                    cost_control_lambda_alarm,
-                    task_state_change_rule_invocation_alarm,
-                    task_creation_rule_invocation_alarm
-                ],
-                width=18,
-                height=3,
-            )
         )
         dashboard.add_widgets(
             aws_cloudwatch.GaugeWidget(
@@ -647,6 +728,30 @@ class AmazonBraketCostControlStack(Stack):
                 width=8,
                 height=6,
                 view=aws_cloudwatch.GraphWidgetView.PIE
+            )
+        )
+        dashboard.add_widgets(
+            aws_cloudwatch.TextWidget(
+                markdown="""
+## Operational Metrics
+Metrics in this section help you monitor the open-source cost control solution is up and running, and operating as expected.
+                """,
+                width=24,
+                height=2,
+            )
+        )
+        dashboard.add_widgets(
+            aws_cloudwatch.AlarmStatusWidget(
+                title='Operational Alarm Status',
+                alarms=[
+                    task_logger_lambda_alarm,
+                    cost_meter_lambda_alarm,
+                    cost_control_lambda_alarm,
+                    task_state_change_rule_invocation_alarm,
+                    task_creation_rule_invocation_alarm
+                ],
+                width=24,
+                height=2,
             )
         )
         dashboard.add_widgets(
