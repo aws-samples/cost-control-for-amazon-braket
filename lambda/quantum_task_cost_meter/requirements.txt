@@ -2,5 +2,5 @@
 # SPDX-License-Identifier: MIT-0
 
 aws-lambda-powertools==2.35.1
-pydantic==2.6.4
+pydantic==2.11.5
 python-dateutil==2.9.0.post0
