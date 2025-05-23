@@ -10,9 +10,9 @@ shots = 100
 
 device_arns = [
     Devices.Amazon.SV1,
-    Devices.IonQ.Harmony,
-    Devices.Rigetti.AspenM3,
-    Devices.OQC.Lucy,
+    Devices.IonQ.Aria1,
+    Devices.Rigetti.Ankaa3,
+    Devices.IQM.Garnet,
 ]
 
 for device_arn in device_arns:
