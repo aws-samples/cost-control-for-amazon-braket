@@ -448,7 +448,7 @@ class AmazonBraketCostControlStack(Stack):
             query_string=aws_logs.QueryString(
                 fields=['@timestamp', 'function_name', 'level', 'message', '@message'],
                 sort='@timestamp asc',
-                filter='@message not like /(START|END|REPORT)./',
+                filter_statements=['@message not like /(START|END|REPORT)./'],
             ),
             log_groups=[
                 task_logger_lambda.log_group,
