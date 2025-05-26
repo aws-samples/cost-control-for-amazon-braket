@@ -25,9 +25,9 @@ def handler(event: CostMeterStreamModel, context: LambdaContext) -> None:
     try:
         for record in event.Records:
             data: TaskTableRecordModel = record.dynamodb.NewImage
-            task_execution = data.task_execution.S
-            user_arn = data.user_identity.S
-            device_arn = data.device_arn.S
+            task_execution = data.task_execution
+            user_arn = data.user_identity
+            device_arn = data.device_arn
             month = parser.parse(task_execution).strftime('%Y-%m')
             month_user = '{month}_{user}'.format(month=month, user=user_arn)
             month_device = '{month}_{device}'.format(month=month, device=device_arn)
@@ -39,7 +39,7 @@ def handler(event: CostMeterStreamModel, context: LambdaContext) -> None:
                     Key={'bin': {'S': cost_bin}},
                     UpdateExpression='SET cost = if_not_exists(cost, :initial_cost) + :task_cost, last_task_execution = :task_execution',
                     ExpressionAttributeValues={
-                        ':task_cost': {'N': data.cost.N},
+                        ':task_cost': {'N': str(data.cost)},
                         ':initial_cost': {'N': '0'},
                         ':task_execution': {'S': task_execution},
                     },
@@ -48,7 +48,7 @@ def handler(event: CostMeterStreamModel, context: LambdaContext) -> None:
                 aggregated_cost[response['Attributes']['bin']['S']] = response['Attributes']['cost']['N']
             logger.info('Aggregate cost', extra=aggregated_cost)
             timestamp = parser.parse(task_execution).timestamp()
-            task_cost = Decimal(data.cost.N)
+            task_cost = data.cost
             cloudwatch.put_metric_data(
                 Namespace='/aws/braket',
                 MetricData=[

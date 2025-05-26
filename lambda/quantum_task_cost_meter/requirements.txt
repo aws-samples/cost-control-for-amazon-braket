@@ -1,6 +1,6 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-aws-lambda-powertools==2.35.1
+aws-lambda-powertools==3.13.0
 pydantic==2.11.5
 python-dateutil==2.9.0.post0
