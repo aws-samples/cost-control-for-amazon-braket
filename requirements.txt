@@ -1,7 +1,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
-aws-cdk-lib==2.198.0
+aws-cdk-lib==2.253.0
 constructs==10.4.2
 
 amazon-braket-sdk==1.91.2
